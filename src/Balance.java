@@ -1,12 +1,12 @@
 final class Balance {
     private final Currency cur;
-    private final double amt;
+    private final long amt;
 
     Balance() {
         this(Currency.RUB, 0);
     }
 
-    Balance(double amt) {
+    Balance(long amt) {
         this(Currency.RUB, amt);
     }
 
@@ -14,12 +14,12 @@ final class Balance {
         this(cur, 0);
     }
 
-    Balance(Currency cur, double amt) {
+    Balance(Currency cur, long amt) {
         if (cur == null) {
             throw new IllegalArgumentException("Currency cannot be null!");
         }
 
-        if (!Double.isFinite(amt) || amt < 0) {
+        if (amt < 0) {
             throw new IllegalArgumentException("Incorrect balance!");
         }
 
@@ -27,7 +27,7 @@ final class Balance {
         this.amt = amt;
     }
 
-    double getAmount() {
+    long getAmount() {
         return amt;
     }
 
@@ -35,30 +35,24 @@ final class Balance {
         return cur;
     }
 
-    Balance add(double amt_new) {
-        if (!Double.isFinite(amt_new) || amt_new <= 0) {
-            throw new IllegalArgumentException("Incorrect amount!");
+    Balance add(long amt_new) {
+        if (amt_new <= 0) {
+            throw new IllegalArgumentException("Amount must be positive!");
         }
 
-        double result = this.amt + amt_new;
-
-        if (!Double.isFinite(result)) {
-            throw new ArithmeticException("Balance overflow!");
-        }
-
-        return new Balance(cur, result);
+        return new Balance(cur, Math.addExact(amt, amt_new));
     }
 
-    Balance subtract(double amt_new) {
-        if (!Double.isFinite(amt_new) || amt_new <= 0) {
-            throw new IllegalArgumentException("Incorrect amount!");
+    Balance subtract(long amt_new) {
+        if (amt_new <= 0) {
+            throw new IllegalArgumentException("Amount must be positive!");
         }
 
-        if (amt_new > this.amt) {
+        if (amt_new > amt) {
             throw new IllegalStateException("Not enough money!");
         }
 
-        return new Balance(cur, this.amt - amt_new);
+        return new Balance(cur, amt - amt_new);
     }
 
     Balance convert(Currency cur2) {
@@ -66,26 +60,26 @@ final class Balance {
             throw new IllegalArgumentException("Currency cannot be null!");
         }
 
-        double oldRate = cur.getPriceInRublesKopecks();
-        double newRate = cur2.getPriceInRublesKopecks();
+        java.math.BigDecimal result = java.math.BigDecimal.valueOf(amt)
+                .multiply(java.math.BigDecimal.valueOf(
+                        cur.getPriceInRublesKopecks()
+                ))
+                .divide(
+                        java.math.BigDecimal.valueOf(
+                                cur2.getPriceInRublesKopecks()
+                        ),
+                        0,
+                        java.math.RoundingMode.HALF_UP
+                );
 
-        if (oldRate <= 0 || newRate <= 0) {
-            throw new IllegalStateException("Incorrect currency rate!");
-        }
-
-        double result = amt * oldRate / newRate;
-
-        if (!Double.isFinite(result)) {
-            throw new ArithmeticException("Conversion overflow!");
-        }
-
-        return new Balance(cur2, result);
+        return new Balance(cur2, result.longValueExact());
     }
 
     void show() {
         System.out.printf(
-                "Current balance: %.2f %s%n",
-                amt,
+                "Current balance: %d.%02d %s%n",
+                amt / 100,
+                amt % 100,
                 cur.getSymbol()
         );
     }

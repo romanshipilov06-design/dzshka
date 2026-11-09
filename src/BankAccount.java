@@ -1,77 +1,69 @@
-final class BankAccount {
-    private Balance bal;
-    private double amt_all_op = 0;
-    private final double min_amt = 200;
+public class Main {
+    public static void main(String[] args) {
 
-    BankAccount() {
-        this.bal = new Balance();
-    }
+        BankAccount t1 = new BankAccount(500_000);
+        BankAccount t2 = new BankAccount(1_000_000);
 
-    BankAccount(Balance bal) {
-        if (bal == null) {
-            throw new IllegalArgumentException("Balance cannot be null!");
+        System.out.println("Initial balances:");
+        t1.show();
+        t2.show();
+
+        try {
+            t1.exchange(t2, 50_000);
+            System.out.println("Transfer successful!");
+        } catch (IllegalArgumentException e) {
+            System.out.println("Argument error: " + e.getMessage());
+        } catch (IllegalStateException e) {
+            System.out.println("Account error: " + e.getMessage());
+        } catch (ArithmeticException e) {
+            System.out.println("Arithmetic error: " + e.getMessage());
         }
 
-        this.bal = bal;
-    }
+        t1.show();
+        t2.show();
 
-    BankAccount(int start_amt) {
-        this.bal = new Balance(start_amt);
-    }
-
-    BankAccount exchange(BankAccount bk, double amt) {
-        if (bk == null) {
-            throw new IllegalArgumentException("Account cannot be null!");
+        try {
+            t1.exchange(t2, -50_000);
+        } catch (IllegalArgumentException e) {
+            System.out.println("Negative amount error: " + e.getMessage());
         }
 
-        if (this == bk) {
-            throw new IllegalArgumentException(
-                    "Cannot transfer money to yourself!"
-            );
+        try {
+            t1.exchange(t1, 50_000);
+        } catch (IllegalArgumentException e) {
+            System.out.println("Self-transfer error: " + e.getMessage());
         }
 
-        if (!Double.isFinite(amt) || amt <= 0) {
-            throw new IllegalArgumentException("Incorrect amount!");
+        try {
+            t1.exchange(t2, 10_000);
+        } catch (IllegalArgumentException e) {
+            System.out.println("Minimum amount error: " + e.getMessage());
         }
 
-        if (amt < min_amt) {
-            throw new IllegalArgumentException(
-                    "Minimum transfer amount is " + min_amt
-            );
+        try {
+            t1.exchange(t2, 10_000_000);
+        } catch (IllegalStateException e) {
+            System.out.println("Insufficient funds error: " + e.getMessage());
         }
 
-        if (bal.getCurrency() != bk.bal.getCurrency()) {
-            throw new IllegalArgumentException(
-                    "Accounts have different currencies!"
-            );
+        try {
+            t1.exchange(null, 50_000);
+        } catch (IllegalArgumentException e) {
+            System.out.println("Null account error: " + e.getMessage());
         }
 
-        if (bal.getAmount() < amt) {
-            throw new IllegalStateException("Not enough money!");
+        try {
+            Balance rub = new Balance(Currency.RUB, 100_000);
+            Balance usd = rub.convert(Currency.USD);
+
+            System.out.println("Currency conversion:");
+            rub.show();
+            usd.show();
+
+        } catch (IllegalArgumentException e) {
+            System.out.println("Conversion argument error: " + e.getMessage());
+        } catch (ArithmeticException e) {
+            System.out.println("Conversion arithmetic error: " + e.getMessage());
         }
-
-        if (!Double.isFinite(amt_all_op + amt) ||
-                !Double.isFinite(bk.amt_all_op + amt)) {
-            throw new ArithmeticException("Operation counter overflow!");
-        }
-
-        Balance newSenderBalance = bal.subtract(amt);
-        Balance newReceiverBalance = bk.bal.add(amt);
-
-        this.bal = newSenderBalance;
-        bk.bal = newReceiverBalance;
-
-        this.amt_all_op += amt;
-        bk.amt_all_op += amt;
-
-        return this;
-    }
-
-    void show() {
-        bal.show();
-
-        System.out.println(
-                "Amount of all operations: " + amt_all_op + "\n"
-        );
     }
 }
